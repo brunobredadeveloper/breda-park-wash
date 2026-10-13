@@ -1,0 +1,2 @@
+# Regras do projeto
+Preservar MVVM, domínio independente e dependências injetadas. Valores monetários em centavos inteiros. Nunca afirmar que uma seleção Pix/cartão processou pagamento. Não substituir dados corrompidos por estado vazio. Novos fluxos financeiros devem ter testes de falha de persistência e duplicidade. Não incluir credenciais nem chaves de assinatura. Não publicar dados reais de clientes.
