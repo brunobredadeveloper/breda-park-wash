@@ -1,31 +1,62 @@
 # Breda Park & Wash
 
-Aplicativo Flutter para gestão de estacionamento e lava-rápido, Android e iOS, da breda_dev. Versão 0.1: operação local de um estabelecimento, sem servidor ou autenticação.
+**Gestão local de estacionamento e lava-rápido em uma aplicação Flutter.**
 
-## Implementado
-- Painel de vagas, lavagens, mensalistas e recebimentos do dia.
-- Cadastro de cliente e veículo com placa validada e duplicidade bloqueada.
-- Entrada/saída, lotação e diária por cada período de 24h iniciado (mínimo uma diária).
-- Tarifa registrada na entrada: alterações futuras não modificam estadias abertas.
-- Mensalidade pré-paga de 30 dias; renovação vigente soma 30 dias ao vencimento.
-- Lavagem: fila, em lavagem, pronto e entregue. Recebimento na entrega.
-- Caixa com forma de pagamento informada manualmente. Não processa pagamentos.
-- Persistência SQLite transacional; alteração em memória só após sucesso na gravação.
-- Material 3, identidade própria, cinco áreas com navegação, estados de carga/erro e formulários.
+Projeto de **Bruno Breda · breda_dev**. Acompanhar veículos, vagas, lavagens, mensalidades e recebimentos no mesmo fluxo de operação.
 
-## Arquitetura
-Domínio Dart independente da UI; Repository para armazenamento; Strategy para cálculo de estadia; ViewModel observável com injeção das dependências e relógio testável; Views focadas na apresentação. MVVM e separação de responsabilidades sem padrões desnecessários.
+**Plataforma:** Flutter · Dart · SQLite · Android/iOS  
+**Estado:** implementação de portfólio em evolução; esteira aprovada na execução referenciada.
 
-## Execução
-Instale Flutter stable. `flutter pub get`, `flutter analyze`, `flutter test`, `flutter run`.
-Android: `flutter build apk --debug`. iOS (macOS/Xcode): `flutter build ios --release --no-codesign` para validar compilação. Instalar/distribuir no iPhone requer conta e assinatura Apple; arquivo sem assinatura não é instalador.
+[Fluxos e demonstração](docs/fluxos.md) · [Engenharia](docs/engenharia.md) · [Builds e evidências](docs/evidencias.md) · [Portfólio completo](https://github.com/brunobredadeveloper/breda-park-wash/blob/main/docs/portfolio-breda-dev.md)
 
-## Limites antes de operação comercial
-Não há autenticação, múltiplos funcionários/dispositivos, servidor, backup/restauração, exportação, conciliação, recibo fiscal, auditoria ou integração bancária. Dados pessoais ficam no sandbox local do aparelho, sem criptografia adicional. Desinstalar pode apagar os registros. Não usar como sistema único de um negócio nesta etapa.
-Cada cliente cadastrado corresponde a um veículo. Diárias de 24h e planos de 30 dias são regras explícitas desta versão, não mês calendário. Lavagens são independentes de vaga de estacionamento. Após expirar durante uma estadia mensalista, essa estadia continua sem cobrança; definir política comercial antes da produção.
+## O que você pode avaliar
 
-## Evolução comercial planejada
-SaaS por estabelecimento: conta do proprietário, papéis proprietário/operador, isolamento entre empresas, sincronização/backup, fechamento de caixa, trilha de auditoria, comprovantes, tabela de preços, relatórios/exportação e portal do cliente. Cobrança B2B por assinatura da plataforma; pagamentos do cliente para o estabelecimento são um fluxo separado.
+- Clientes e veículos com validação de placa e bloqueio de duplicidade.
+- Entrada/saída com limite de vagas e tarifa capturada na entrada.
+- Diárias de 24h iniciadas e planos pré-pagos de 30 dias.
+- Lavagens em etapas, caixa manual e persistência SQLite transacional.
 
-## Assets e direitos
-Sem modelos Renderpeople ou outros assets visuais externos. Ícones Material do Flutter e interface própria. Dependências têm seus próprios termos, mantidos pelos fornecedores. Código do produto não é licenciado para redistribuição por terceiros nesta entrega.
+## Experiência e navegação
+
+Veja o [mapa das telas e o roteiro de avaliação](docs/fluxos.md). Esta revisão não adiciona capturas sem origem verificável; imagens conceituais não são apresentadas como telas do aplicativo.
+
+## Fluxo principal
+
+1. Cadastre um cliente e veículo com dados fictícios.
+2. Registre entrada por diária e tente entrada duplicada.
+3. Confirme a saída e registre a forma de pagamento recebido.
+4. Crie lavagem e avance até entregar; confira o recebimento no caixa.
+5. Registre mensalidade, entre como mensalista e reabra o app para conferir persistência.
+
+## Executar e validar
+
+Flutter 3.47.7 e Dart compatível, conforme a esteira. Android SDK/JDK para Android; macOS/Xcode para iOS.
+
+```sh
+flutter pub get
+flutter analyze
+flutter test
+flutter build apk --debug
+# macOS/Xcode, build iOS sem assinatura:
+flutter build ios --release --no-codesign
+```
+
+Configuração, Firebase quando aplicável, assinatura e comandos adicionais: [referência técnica](docs/referencia-tecnica.md).
+
+[Abrir a execução verificada no GitHub Actions](https://github.com/brunobredadeveloper/breda-park-wash/actions/runs/38485523598). A conclusão dessa execução é **success**; consulte os artefatos e a revisão de código em [evidências](docs/evidencias.md).
+
+## Limites do produto
+
+Avaliação local de um estabelecimento, sem autenticação, backup, multiusuário ou sincronização. Pix/cartão são apenas formas de pagamento informadas; não processam cobranças. Não usar como sistema único comercial nesta fase. Plano que vence durante estadia não acrescenta cobrança nessa estadia; definir política comercial.
+
+## Para quem revisa o portfólio
+
+Donos de pequenos estabelecimentos e equipes que avaliam regras comerciais e Flutter. As [decisões de engenharia](docs/engenharia.md) conectam responsabilidades, arquivos e testes. O [roteiro funcional](docs/fluxos.md) ajuda a avaliar comportamento, falhas e preservação de dados. Funcionalidade planejada não é apresentada como implementada.
+
+## Próximos passos
+
+- Validar os percursos no dispositivo real e registrar os resultados.
+- Revisar acessibilidade, interrupções e falhas de armazenamento/rede aplicáveis.
+- Concluir requisitos de distribuição, suporte e segurança antes de uso comercial.
+
+Código, mídias e dependências mantêm seus respectivos termos. Consulte os créditos e os avisos existentes no repositório.

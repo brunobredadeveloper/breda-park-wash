@@ -1,8 +1,9 @@
 # Validação — 0.1.0
-Flutter 3.47.7 stable, revisão abaf9c523780a608bd46686fd5e53740a07077f8, Dart 3.13.5.
 
-- 9 testes: diárias e limites; placas; lotação/duplicidade; atomicidade em falha; lavagem/recebimento único; renovação; serialização; navegação; formulário de cadastro.
-- Análise estática sem problemas.
-- Projetos nativos Android e iOS gerados pelo Flutter. Ícone próprio da breda_dev nos dois.
-- Builds APK/iOS ainda não executados: sem Android SDK neste ambiente e sem macOS/Xcode. Workflow pronto, não executado no GitHub porque o repositório ainda precisa ser criado/autorizado.
-- Assinatura de distribuição, testes em aparelhos reais, backup e operação multiusuário pendentes.
+A [esteira 38485523598](https://github.com/brunobredadeveloper/breda-park-wash/actions/runs/38485523598) concluiu com sucesso, incluindo os jobs Android e iOS. Código: `d54a6adacc63761e903e62332b65ff08a2fe2b52`. Consulta de status realizada em 14/10/2026.
+
+Flutter 3.47.7 stable, Dart 3.13.5; nove testes unitários/de widgets na validação original e análise estática sem problemas. Artefato Android de avaliação e artefato iOS sem assinatura disponíveis na execução. A compilação iOS não comprova instalação em iPhone.
+
+Projetos nativos gerados pelo Flutter com ícone breda_dev. Faltam assinatura de distribuição, avaliação em aparelhos reais, autenticação, backup e operação multiusuário para uso comercial.
+
+[Evidências e distribuição](evidencias.md) · [Roteiro no celular](TESTE-NO-CELULAR.md)
