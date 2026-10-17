@@ -84,26 +84,31 @@ class Wash {
   final String id, customerId, service;
   final int priceCents;
   final WashStatus status;
+  final bool paid;
   const Wash({
     required this.id,
     required this.customerId,
     required this.service,
     required this.priceCents,
     this.status = WashStatus.queued,
+    this.paid = false,
   });
-  Wash advance() => Wash(
+  Wash copy({WashStatus? status, bool? paid}) => Wash(
     id: id,
     customerId: customerId,
     service: service,
     priceCents: priceCents,
-    status: WashStatus.values[status.index + 1],
+    status: status ?? this.status,
+    paid: paid ?? this.paid,
   );
+  Wash advance() => copy(status: WashStatus.values[status.index + 1]);
   Map<String, dynamic> toJson() => {
     'id': id,
     'customerId': customerId,
     'service': service,
     'priceCents': priceCents,
     'status': status.name,
+    'paid': paid,
   };
   factory Wash.fromJson(Map<String, dynamic> j) => Wash(
     id: j['id'],
@@ -111,6 +116,10 @@ class Wash {
     service: j['service'],
     priceCents: j['priceCents'],
     status: WashStatus.values.byName(j['status']),
+    // Antes deste campo, toda entrega registrava um recebimento na mesma transação.
+    paid: j.containsKey('paid')
+        ? j['paid'] as bool
+        : j['status'] == 'delivered',
   );
 }
 

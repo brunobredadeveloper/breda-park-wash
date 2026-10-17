@@ -42,3 +42,18 @@ Avaliação local de um estabelecimento, sem autenticação, backup, multiusuár
 - [ ] Registrar versão, aparelho, resultado esperado e observado em eventual relato.
 
 [Voltar ao README](../README.md) · [Evidências](evidencias.md)
+
+## Lavagens: entrega e pagamento independentes
+
+- Use busca por placa, cliente ou serviço e filtros Na fila, Em lavagem, Pronto e Entregue.
+- A lista respeita a ordem de criação; os carros mais antigos aparecem primeiro.
+- Registrar recebimento permite informar Pix, Dinheiro ou Cartão antes ou depois da entrega.
+- Entregar veículo não movimenta o caixa. Sem pagamento, exige confirmação e mantém A receber.
+- O filtro Pagamento pendente combina com a busca e com a etapa selecionada.
+- No Caixa, Hoje considera a data local do recebimento; Todo o histórico mostra todos os registros.
+- O resumo separa formas de pagamento. Lavagens a receber considera todas as datas e inclui serviços ainda em execução.
+- Registros antigos entregues são tratados como pagos, pois a versão anterior gravava entrega e recebimento juntos.
+
+Roteiro de avaliação: criar lavagem, avançar até pronto, cancelar a confirmação de entrega,
+confirmar entrega pendente e registrar recebimento depois. Conferir que existe apenas uma entrada no caixa.
+Pagamentos são registros manuais; não há processamento bancário nem suporte a pagamento parcial nesta rodada.

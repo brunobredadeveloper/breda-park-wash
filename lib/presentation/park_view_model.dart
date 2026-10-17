@@ -146,27 +146,66 @@ class ParkViewModel extends ChangeNotifier {
           ],
         );
       });
-  Future<bool> advanceWash(String id, String method) => change(() {
+  static const paymentMethods = ['Pix', 'Dinheiro', 'Cartão'];
+
+  List<Wash> get unpaidWashes => state.washes.where((w) => !w.paid).toList();
+  int get outstandingWashCents =>
+      unpaidWashes.fold(0, (total, wash) => total + wash.priceCents);
+
+  List<Receipt> receiptsOn(DateTime day) => state.receipts.where((r) {
+    final local = r.paidAt.toLocal();
+    final selected = day.toLocal();
+    return local.year == selected.year &&
+        local.month == selected.month &&
+        local.day == selected.day;
+  }).toList();
+
+  Receipt _washReceipt(Wash wash, String method) {
+    if (!paymentMethods.contains(method)) {
+      throw ArgumentError('Selecione Pix, Dinheiro ou Cartão.');
+    }
+    return Receipt(
+      id: nextId,
+      customerId: wash.customerId,
+      description: wash.service,
+      method: method,
+      paidAt: clock(),
+      cents: wash.priceCents,
+    );
+  }
+
+  Future<bool> receiveWash(String id, String method) => change(() {
+    final wash = state.washes.firstWhere((w) => w.id == id);
+    if (wash.paid) throw ArgumentError('Pagamento já registrado.');
+    final receipt = _washReceipt(wash, method);
+    return state.copy(
+      washes: state.washes
+          .map((w) => w.id == id ? w.copy(paid: true) : w)
+          .toList(),
+      receipts: [...state.receipts, receipt],
+    );
+  });
+
+  // Método opcional mantém compatibilidade com a entrega com recebimento.
+  // Sem método, avança somente o serviço e preserva a pendência financeira.
+  Future<bool> advanceWash(String id, [String method = '']) => change(() {
     final wash = state.washes.firstWhere((w) => w.id == id);
     if (wash.status == WashStatus.delivered) {
       throw ArgumentError('Lavagem já entregue.');
     }
     final next = wash.advance();
+    final receive = next.status == WashStatus.delivered && method.isNotEmpty;
+    if (receive && wash.paid) {
+      throw ArgumentError(
+        'Pagamento já registrado. Entregue sem nova cobrança.',
+      );
+    }
+    final receipt = receive ? _washReceipt(wash, method) : null;
     return state.copy(
-      washes: state.washes.map((w) => w.id == id ? next : w).toList(),
-      receipts: next.status != WashStatus.delivered
-          ? state.receipts
-          : [
-              ...state.receipts,
-              Receipt(
-                id: nextId,
-                customerId: wash.customerId,
-                description: wash.service,
-                method: method,
-                paidAt: clock(),
-                cents: wash.priceCents,
-              ),
-            ],
+      washes: state.washes
+          .map((w) => w.id == id ? next.copy(paid: wash.paid || receive) : w)
+          .toList(),
+      receipts: receipt == null ? state.receipts : [...state.receipts, receipt],
     );
   });
   Future<bool> renew(String customerId, int cents, String method) => change(() {

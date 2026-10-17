@@ -56,6 +56,10 @@ class ParkHome extends StatefulWidget {
 class _ParkHomeState extends State<ParkHome> {
   int tab = 0;
   String search = '';
+  String washSearch = '';
+  WashStatus? washFilter;
+  bool onlyUnpaid = false;
+  bool cashToday = true;
   ParkViewModel get vm => widget.model;
   @override
   void initState() {
@@ -237,14 +241,7 @@ class _ParkHomeState extends State<ParkHome> {
   );
   Widget dashboard() {
     final s = vm.state, n = vm.clock();
-    final today = s.receipts
-        .where(
-          (r) =>
-              r.paidAt.year == n.year &&
-              r.paidAt.month == n.month &&
-              r.paidAt.day == n.day,
-        )
-        .fold(0, (v, r) => v + r.cents);
+    final today = vm.receiptsOn(n).fold(0, (v, r) => v + r.cents);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -397,66 +394,150 @@ class _ParkHomeState extends State<ParkHome> {
       }),
     ],
   );
-  Widget washes() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      heading('Cada carro, bem cuidado.', 'Fila → lavagem → pronto → entregue'),
-      if (vm.state.washes.isEmpty)
-        empty('Crie uma ordem de lavagem para começar.', Icons.local_car_wash),
-      ...vm.state.washes.reversed.map((w) {
-        final c = vm.state.customer(w.customerId);
-        final labels = ['Na fila', 'Em lavagem', 'Pronto', 'Entregue'];
-        return card(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                c.plate,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
+  Widget washes() {
+    const labels = ['Na fila', 'Em lavagem', 'Pronto', 'Entregue'];
+    final visible = vm.state.washes.where((w) {
+      final c = vm.state.customer(w.customerId);
+      return (washFilter == null || w.status == washFilter) &&
+          (!onlyUnpaid || !w.paid) &&
+          '${c.plate} ${c.name} ${w.service}'.toLowerCase().contains(
+            washSearch,
+          );
+    }).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        heading(
+          'Cada carro, bem cuidado.',
+          'Serviço e pagamento acompanhados separadamente.',
+        ),
+        TextField(
+          onChanged: (v) => setState(() => washSearch = v.trim().toLowerCase()),
+          decoration: const InputDecoration(
+            prefixIcon: Icon(Icons.search),
+            hintText: 'Buscar placa, cliente ou serviço',
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            ChoiceChip(
+              label: Text('Todas (${vm.state.washes.length})'),
+              selected: washFilter == null,
+              onSelected: (_) => setState(() => washFilter = null),
+            ),
+            ...WashStatus.values.map(
+              (status) => ChoiceChip(
+                label: Text(
+                  '${labels[status.index]} (${vm.state.washes.where((w) => w.status == status).length})',
                 ),
+                selected: washFilter == status,
+                onSelected: (_) => setState(() => washFilter = status),
               ),
-              Text('${c.name} · ${w.service}'),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Chip(label: Text(labels[w.status.index])),
-                  const Spacer(),
-                  Text(money(w.priceCents)),
-                ],
-              ),
-              if (w.status != WashStatus.delivered)
-                FilledButton(
-                  onPressed: vm.busy
-                      ? null
-                      : () async {
-                          if (w.status == WashStatus.ready) {
-                            final method = await payment(
-                              'Entregar e receber',
-                              w.priceCents,
-                            );
-                            if (method != null) {
-                              await perform(() => vm.advanceWash(w.id, method));
-                            }
-                          } else {
-                            await perform(() => vm.advanceWash(w.id, ''));
-                          }
-                        },
-                  child: Text(
-                    w.status == WashStatus.queued
-                        ? 'Iniciar lavagem'
-                        : w.status == WashStatus.washing
-                        ? 'Marcar como pronto'
-                        : 'Receber e entregar',
+            ),
+            FilterChip(
+              label: const Text('Pagamento pendente'),
+              selected: onlyUnpaid,
+              onSelected: (value) => setState(() => onlyUnpaid = value),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (visible.isEmpty)
+          empty(
+            vm.state.washes.isEmpty
+                ? 'Crie uma ordem de lavagem para começar.'
+                : 'Nenhuma lavagem para estes filtros.',
+            Icons.local_car_wash,
+          ),
+        // Ordem de criação: os primeiros carros da fila aparecem primeiro.
+        ...visible.map((w) {
+          final c = vm.state.customer(w.customerId);
+          return card(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  c.plate,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-            ],
+                Text('${c.name} · ${c.vehicle}'),
+                Text('${w.service} · ${money(w.priceCents)}'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    Chip(label: Text(labels[w.status.index])),
+                    Chip(
+                      avatar: Icon(
+                        w.paid ? Icons.check_circle_outline : Icons.schedule,
+                        size: 18,
+                      ),
+                      label: Text(w.paid ? 'Pago' : 'A receber'),
+                    ),
+                  ],
+                ),
+                if (w.status != WashStatus.delivered)
+                  FilledButton(
+                    onPressed: vm.busy ? null : () => advanceService(w),
+                    child: Text(
+                      w.status == WashStatus.queued
+                          ? 'Iniciar lavagem'
+                          : w.status == WashStatus.washing
+                          ? 'Marcar como pronto'
+                          : 'Entregar veículo',
+                    ),
+                  ),
+                if (!w.paid)
+                  OutlinedButton.icon(
+                    onPressed: vm.busy ? null : () => receiveWash(w),
+                    icon: const Icon(Icons.payments_outlined),
+                    label: const Text('Registrar recebimento'),
+                  ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Future<void> receiveWash(Wash wash) async {
+    final method = await payment('Registrar recebimento', wash.priceCents);
+    if (method != null) await perform(() => vm.receiveWash(wash.id, method));
+  }
+
+  Future<void> advanceService(Wash wash) async {
+    if (wash.status == WashStatus.ready && !wash.paid) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Entregar com pagamento pendente?'),
+          content: Text(
+            '${money(wash.priceCents)} continuará a receber. A entrega não registra dinheiro no caixa.',
           ),
-        );
-      }),
-    ],
-  );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Voltar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Confirmar entrega'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    await perform(() => vm.advanceWash(wash.id));
+  }
+
   Widget customers() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
@@ -511,7 +592,8 @@ class _ParkHomeState extends State<ParkHome> {
     ],
   );
   Widget cash() {
-    final total = vm.state.receipts.fold(0, (v, r) => v + r.cents);
+    final receipts = cashToday ? vm.receiptsOn(vm.clock()) : vm.state.receipts;
+    final total = receipts.fold(0, (v, r) => v + r.cents);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -519,17 +601,71 @@ class _ParkHomeState extends State<ParkHome> {
           'Caixa com clareza.',
           'Recebimentos registrados manualmente. Não processa Pix ou cartões.',
         ),
+        Wrap(
+          spacing: 8,
+          children: [
+            ChoiceChip(
+              label: const Text('Hoje'),
+              selected: cashToday,
+              onSelected: (_) => setState(() => cashToday = true),
+            ),
+            ChoiceChip(
+              label: const Text('Todo o histórico'),
+              selected: !cashToday,
+              onSelected: (_) => setState(() => cashToday = false),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
         metric(
-          'Total registrado',
+          cashToday ? 'Recebido hoje' : 'Total registrado',
           money(total),
           Icons.account_balance_wallet_outlined,
         ),
-        if (vm.state.receipts.isEmpty)
+        ...ParkViewModel.paymentMethods.map(
+          (method) => card(
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(method),
+              trailing: Text(
+                money(
+                  receipts
+                      .where((r) => r.method == method)
+                      .fold(0, (v, r) => v + r.cents),
+                ),
+              ),
+            ),
+          ),
+        ),
+        card(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Lavagens a receber · todos os dias',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                '${vm.unpaidWashes.length} pendentes · ${money(vm.outstandingWashCents)}',
+              ),
+              TextButton(
+                onPressed: () => setState(() {
+                  tab = 2;
+                  washFilter = null;
+                  washSearch = '';
+                  onlyUnpaid = true;
+                }),
+                child: const Text('Ver pendências'),
+              ),
+            ],
+          ),
+        ),
+        if (receipts.isEmpty)
           empty(
-            'Entradas no caixa aparecerão após saídas, entregas e mensalidades.',
+            'Nenhum recebimento registrado neste período.',
             Icons.receipt_long,
           ),
-        ...vm.state.receipts.reversed.map(
+        ...receipts.reversed.map(
           (r) => card(
             ListTile(
               contentPadding: EdgeInsets.zero,

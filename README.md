@@ -14,7 +14,8 @@ Projeto de **Bruno Breda · breda_dev**. Acompanhar veículos, vagas, lavagens, 
 - Clientes e veículos com validação de placa e bloqueio de duplicidade.
 - Entrada/saída com limite de vagas e tarifa capturada na entrada.
 - Diárias de 24h iniciadas e planos pré-pagos de 30 dias.
-- Lavagens em etapas, caixa manual e persistência SQLite transacional.
+- Lavagens com busca e filtros, pagamento independente da entrega, pendências e caixa por período/forma de pagamento.
+- Persistência SQLite transacional, com preservação dos registros antigos.
 
 ## Experiência e navegação
 
@@ -25,7 +26,7 @@ Veja o [mapa das telas e o roteiro de avaliação](docs/fluxos.md). Esta revisã
 1. Cadastre um cliente e veículo com dados fictícios.
 2. Registre entrada por diária e tente entrada duplicada.
 3. Confirme a saída e registre a forma de pagamento recebido.
-4. Crie lavagem e avance até entregar; confira o recebimento no caixa.
+4. Crie lavagem, registre o recebimento e avance até entregar; ou entregue com pendência e receba depois. Confira uma única entrada no caixa.
 5. Registre mensalidade, entre como mensalista e reabra o app para conferir persistência.
 
 ## Executar e validar

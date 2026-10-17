@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:breda_park_wash/domain/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breda_park_wash/presentation/park_app.dart';
 import 'package:breda_park_wash/presentation/park_view_model.dart';
@@ -39,6 +40,43 @@ void main() {
     await tester.tap(find.text('Salvar'));
     await tester.pumpAndSettle();
     expect(vm.state.customers.single.name, 'Ana');
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('Entrega pendente exige confirmação e recebimento separado', (
+    tester,
+  ) async {
+    final repo = MemoryRepository();
+    final vm = ParkViewModel(repo);
+    await vm.load();
+    await vm.addCustomer('Ana', '', 'ABC1D23', 'HB20');
+    await vm.addWash(vm.state.customers.single.id, 'Completa', 6000);
+    final id = vm.state.washes.single.id;
+    await vm.advanceWash(id);
+    await vm.advanceWash(id);
+    await tester.pumpWidget(ParkApp(model: vm));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lavagens').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Entregar veículo'));
+    await tester.tap(find.text('Entregar veículo'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Voltar'));
+    await tester.pumpAndSettle();
+    expect(vm.state.washes.single.status, WashStatus.ready);
+    await tester.tap(find.text('Entregar veículo'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Confirmar entrega'));
+    await tester.pumpAndSettle();
+    expect(vm.state.washes.single.status, WashStatus.delivered);
+    expect(vm.state.receipts, isEmpty);
+    await tester.ensureVisible(find.text('Registrar recebimento'));
+    await tester.tap(find.text('Registrar recebimento'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pix'));
+    await tester.pumpAndSettle();
+    expect(vm.state.receipts.single.cents, 6000);
+    expect(find.text('Pago'), findsOneWidget);
+    expect(find.text('Registrar recebimento'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
